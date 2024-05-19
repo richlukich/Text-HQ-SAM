@@ -9,3 +9,5 @@ from .image_encoder import ImageEncoderViT
 from .mask_decoder import MaskDecoder
 from .prompt_encoder import PromptEncoder
 from .transformer import TwoWayTransformer
+from .text_hq import ImageCaption, BertEmbedding, Tokenizer
+from .bertwarper import generate_masks_with_special_tokens_and_transfer_map, generate_masks_with_special_tokens

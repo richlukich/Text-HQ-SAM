@@ -10,9 +10,11 @@ from copy import deepcopy
 from skimage import io
 import os
 from glob import glob
-
+from pycocotools.coco import COCO
+from pycocotools import mask
+import cv2
 import torch
-from torch.utils.data import Dataset, DataLoader, ConcatDataset
+from torch.utils.data import Dataset, DataLoader, ConcatDataset, SequentialSampler
 from torchvision import transforms, utils
 from torchvision.transforms.functional import normalize
 import torch.nn.functional as F
@@ -53,34 +55,41 @@ def create_dataloaders(name_im_gt_list, my_transforms=[], batch_size=1, training
     if(len(name_im_gt_list)==0):
         return gos_dataloaders, gos_datasets
 
-    num_workers_ = 1
+    num_workers_ = 0
     if(batch_size>1):
-        num_workers_ = 2
+        num_workers_ = 0
     if(batch_size>4):
-        num_workers_ = 4
+        num_workers_ = 0
     if(batch_size>8):
-        num_workers_ = 8
+        num_workers_ = 0
 
 
     if training:
         for i in range(len(name_im_gt_list)):   
-            gos_dataset = OnlineDataset([name_im_gt_list[i]], transform = transforms.Compose(my_transforms))
+            #gos_dataset = OnlineDataset([name_im_gt_list[i]], transform = transforms.Compose(my_transforms))
+            gos_dataset = NkbDataset(images_filepath = '/home/vetoshkin_ln/text_sam_hq/train/data/train',
+                                     annotation_file = '/home/vetoshkin_ln/text_sam_hq/annotations/train.json',
+                                     transform = transforms.Compose(my_transforms))
             gos_datasets.append(gos_dataset)
 
         gos_dataset = ConcatDataset(gos_datasets)
-        sampler = DistributedSampler(gos_dataset)
-        batch_sampler_train = torch.utils.data.BatchSampler(
-            sampler, batch_size, drop_last=True)
-        dataloader = DataLoader(gos_dataset, batch_sampler=batch_sampler_train, num_workers=num_workers_)
+        #sampler = SequentialSampler(gos_dataset)
+        #batch_sampler_train = torch.utils.data.BatchSampler(
+        #    sampler, batch_size, drop_last=True)
+        dataloader = DataLoader(gos_dataset, num_workers=num_workers_)
 
         gos_dataloaders = dataloader
         gos_datasets = gos_dataset
 
     else:
         for i in range(len(name_im_gt_list)):   
-            gos_dataset = OnlineDataset([name_im_gt_list[i]], transform = transforms.Compose(my_transforms), eval_ori_resolution = True)
-            sampler = DistributedSampler(gos_dataset, shuffle=False)
-            dataloader = DataLoader(gos_dataset, batch_size, sampler=sampler, drop_last=False, num_workers=num_workers_)
+            #gos_dataset = OnlineDataset([name_im_gt_list[i]], transform = transforms.Compose(my_transforms), eval_ori_resolution = True)
+            gos_dataset = NkbDataset(images_filepath = '/home/vetoshkin_ln/text_sam_hq/train/data/val',
+                                     annotation_file = '/home/vetoshkin_ln/text_sam_hq/annotations/val.json',
+                                     transform = transforms.Compose(my_transforms),
+                                     eval_ori_resolution = True)
+            #sampler = DistributedSampler(gos_dataset, shuffle=False)
+            dataloader = DataLoader(gos_dataset, batch_size, drop_last=False, num_workers=num_workers_)
 
             gos_dataloaders.append(dataloader)
             gos_datasets.append(gos_dataset)
@@ -270,3 +279,76 @@ class OnlineDataset(Dataset):
             sample['ori_gt_path'] = self.dataset["gt_path"][idx]
 
         return sample
+    
+
+
+class NkbDataset(Dataset):
+    def __init__(self, images_filepath, annotation_file, transform = None, eval_ori_resolution=False):
+        self.images_filepath = images_filepath
+        self.annotation_file = annotation_file
+        self.transform = transform
+        self.eval_ori_resolution = eval_ori_resolution
+        self.coco = COCO(annotation_file)
+        img_ids = [info['id'] for info in self.coco.dataset['images']]
+        self.anns = []
+        for img_id in img_ids:
+            ann_ids = self.coco.getAnnIds(imgIds=[img_id], iscrowd=None)
+            anns = self.coco.loadAnns(ann_ids)
+            image_name = self.coco.loadImgs(img_id)[0]['file_name']
+            for ann in anns:
+                rle = ann['segmentation']
+                category_id = ann['category_id']
+                bbox = ann['bbox']
+                cat_name = self.coco.loadCats(category_id)[0]['name']
+                if cat_name in ['bump','manhole','pit','puddle','firehose','hose','wire','poop']:
+                    data = {'image_name': image_name,
+                            'rle': rle,
+                            'bbox': bbox,
+                            'cat_name': cat_name}
+                    self.anns.append(data)
+                else:
+                    continue
+
+    def decode_rle(self,compressed_rle):
+        decoded_rle = mask.decode(compressed_rle)
+        return decoded_rle     
+    
+    def __getitem__(self, idx):
+        data = self.anns[idx]
+        image_name = data['image_name']
+       
+        image = io.imread(self.images_filepath + '/' + image_name)
+        
+        rle = data['rle']
+        compressed_rle = mask.frPyObjects(rle, rle.get('size')[0], rle.get('size')[1])
+        binary_mask = self.decode_rle(compressed_rle)
+        cat_name = data['cat_name']
+        bbox = data['bbox']
+       
+        im = torch.tensor(image.copy(), dtype=torch.float32)
+        im = torch.transpose(torch.transpose(im, 1, 2),0,1)
+        gt = torch.unsqueeze(torch.tensor(binary_mask, dtype=torch.float32),0) * 255.0
+        
+        sample = {
+                    "imidx": torch.from_numpy(np.array(idx)),
+                    "image": im,
+                    "label": gt,
+                    "shape": torch.tensor(im.shape[-2:]),
+                    "bbox": bbox
+                    }
+        
+        if self.transform:
+            sample = self.transform(sample)
+
+        if self.eval_ori_resolution:
+            sample["ori_label"] = gt.type(torch.uint8)  # NOTE for evaluation only. And no flip here
+            sample['ori_im_path'] = self.images_filepath + '/' + image_name
+            
+        sample['cat_name'] = cat_name
+        return sample
+    def __len__(self):
+        return len(self.anns)
+
+
+
+            

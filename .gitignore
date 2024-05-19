@@ -1,0 +1,8 @@
+annotations
+checkpoints
+train/logs
+train/wandb
+train/work_dirs
+train/data
+create_weights.py
+sam_hq_best_epoch.pth
