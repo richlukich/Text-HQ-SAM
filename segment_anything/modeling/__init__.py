@@ -11,4 +11,4 @@ from .mask_decoder import MaskDecoder
 from .prompt_encoder import PromptEncoder
 from .transformer import TwoWayTransformer
 from .tiny_vit_sam import TinyViT
-from .text_hq import ImageCaption 
+#from .text_hq import ImageCaption 
