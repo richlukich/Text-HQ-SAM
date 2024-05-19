@@ -30,7 +30,8 @@ class SamPredictor:
         self.model = sam_model
         self.transform = ResizeLongestSide(sam_model.image_encoder.img_size)
         self.reset_image()
-
+    def set_tokenized(self,tokenized: dict) -> None:
+        self.tokenized = tokenized
     def set_image(
         self,
         image: np.ndarray,
@@ -239,6 +240,7 @@ class SamPredictor:
             multimask_output=multimask_output,
             hq_token_only=hq_token_only,
             interm_embeddings=self.interm_features,
+            tokenized = self.tokenized
         )
 
         # Upscale the masks to the original image resolution
