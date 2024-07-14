@@ -13,6 +13,8 @@
 
 We propose HQ-SAM to upgrade SAM for high-quality zero-shot segmentation. Refer to our [paper](https://arxiv.org/abs/2306.01567) for more details.
 
+![Alt text](figs/HQ-SAM-Text.png)
+
 Updates
 -----------------
 :fire::fire: **SAM in 3D**: Interested in intersecting SAM and 3D Gaussian Splatting? See our new work [Gaussian Grouping](https://github.com/lkeab/gaussian-grouping)!
