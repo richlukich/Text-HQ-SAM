@@ -1,4 +1,5 @@
-# Segment Anything in High Quality
+# Text Segment Anything in High Quality
+<img width="900" alt="image" src='figs/HQ-SAM-Text.png'>
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/segment-anything-in-high-quality/zero-shot-segmentation-on-segmentation-in-the)](https://paperswithcode.com/sota/zero-shot-segmentation-on-segmentation-in-the?p=segment-anything-in-high-quality)
 <a href="https://colab.research.google.com/drive/1f3PF1t1aseVzfFfdFx6I3UyjzJe6INKI?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>

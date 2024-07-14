@@ -20,7 +20,8 @@ class ImageCaption():
     def __init__(self, device):
         self.device = device
         self.processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
-        self.model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large", torch_dtype=torch.float16).to(device)
+        self.model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large",  
+                                                                  torch_dtype=torch.float16).to(device)
         self.k = 0
     def forward(self, image, save = False):
         if save:
