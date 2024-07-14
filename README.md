@@ -1,5 +1,4 @@
 # Text Segment Anything in High Quality
-<img width="900" alt="image" src='figs/HQ-SAM-Text.png'>
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/segment-anything-in-high-quality/zero-shot-segmentation-on-segmentation-in-the)](https://paperswithcode.com/sota/zero-shot-segmentation-on-segmentation-in-the?p=segment-anything-in-high-quality)
 <a href="https://colab.research.google.com/drive/1f3PF1t1aseVzfFfdFx6I3UyjzJe6INKI?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
@@ -13,7 +12,7 @@
 > ETH Zurich & HKUST 
 
 We propose HQ-SAM to upgrade SAM for high-quality zero-shot segmentation. Refer to our [paper](https://arxiv.org/abs/2306.01567) for more details.
-
+<img width="900" alt="image" src='figs/HQ-SAM-Text.png'>
 Updates
 -----------------
 :fire::fire: **SAM in 3D**: Interested in intersecting SAM and 3D Gaussian Splatting? See our new work [Gaussian Grouping](https://github.com/lkeab/gaussian-grouping)!
